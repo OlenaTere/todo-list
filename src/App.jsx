@@ -214,7 +214,7 @@ function App() {
       console.log('error: ', error);
       setErrorMessage(`${error.message}. Reverting todo...`);
       const revertedTodos = todoList.map((todo) => {
-        if (todo.id === originalTodo.todo.id) {
+        if (todo.id === originalTodo.id) {
           return originalTodo;
         } else {
           return todo;
