@@ -9,7 +9,10 @@ export default function TodoForm({ onAddTodo }) {
   function handleAddTodo(event) {
     event.preventDefault();
     //const title = event.target.title.value;
-    onAddTodo(workingTodo);
+    onAddTodo({
+      title: workingTodo,
+      isCompleted: false
+    });
     setWorkingTodo('');
     //event.target.title.value = '';
     todoTitleInput.current.focus();
