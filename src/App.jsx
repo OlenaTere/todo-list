@@ -2,15 +2,29 @@ import './App.css';
 import TodoList from './features/TodoList/TodoList';
 import TodoForm from './features/TodoForm';
 import { useEffect, useState } from 'react';
+import TodosViewForm from './features/TodosViewForm';
+
+const url = `https://api.airtable.com/v0/${import.meta.env.VITE_BASE_ID}/${import.meta.env.VITE_TABLE_NAME}`;
+const token = `Bearer ${import.meta.env.VITE_PAT}`;
+
+const encodeUrl = ({ sortField, sortDirection, queryString }) => {
+  let sortQuery = `sort[0][field]=${sortField}&sort[0][direction]=${sortDirection}`;
+  let searchQuery = '';
+
+  if (queryString) {
+    searchQuery = `&filterByFormula=SEARCH("${queryString}", title)`;
+  }
+  return encodeURI(`${url}?${sortQuery}${searchQuery}`);
+};
 
 function App() {
   const [todoList, setTodoList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-
-  const url = `https://api.airtable.com/v0/${import.meta.env.VITE_BASE_ID}/${import.meta.env.VITE_TABLE_NAME}`;
-  const token = `Bearer ${import.meta.env.VITE_PAT}`;
+  const [sortField, setSortField] = useState('createdTime');
+  const [sortDirection, setSortDirection] = useState('desc');
+  const [queryString, setQueryString] = useState('');
 
   useEffect(() => {
     const fetchTodos = async () => {
@@ -22,23 +36,24 @@ function App() {
       };
 
       try {
-        const resp = await fetch(url, options);
+        const resp = await fetch(
+          encodeUrl({ sortField, sortDirection, queryString }),
+          options
+        );
         if (!resp.ok) {
           throw new Error(resp.message);
         }
         const { records } = await resp.json();
 
         const todos = records
-        .filter(record => record.fields && record.fields.title) //only keep title that actually have a title in Airtable
-        .map(record => ({
-          id: record.id,
-          title: record.fields.title.trim(), //clean the title (remove empty spaces)
-          isCompleted: record.fields.isCompleted ?? false, //if isCompleted is missing, default it to false
-        }));
+          .filter((record) => record.fields && record.fields.title) //only keep title that actually have a title in Airtable
+          .map((record) => ({
+            id: record.id,
+            title: record.fields.title.trim(), //clean the title (remove empty spaces)
+            isCompleted: record.fields.isCompleted ?? false, //if isCompleted is missing, default it to false
+          }));
 
-        setTodoList(todos
-        );
-
+        setTodoList(todos);
       } catch (error) {
         setErrorMessage(error.message);
       } finally {
@@ -47,7 +62,7 @@ function App() {
     };
 
     fetchTodos();
-  }, [url, token]);
+  }, [sortField, sortDirection, queryString]);
 
   const handleAddTodo = async (newTodo) => {
     //setIsSaving(true);
@@ -71,7 +86,10 @@ function App() {
     };
     try {
       setIsSaving(true);
-      const resp = await fetch(url, options);
+      const resp = await fetch(
+        encodeUrl({ sortField, sortDirection, queryString }),
+        options
+      );
       if (!resp.ok) {
         throw new Error(resp.message);
       }
@@ -101,7 +119,7 @@ function App() {
       return todo;
     });
     setTodoList(updatedTodos);
-  
+
     // 2. Create the payload to send to Airtable
     const todoToUpdate = todoList.find((todo) => todo.id === id);
     const payload = {
@@ -109,12 +127,12 @@ function App() {
         {
           id: todoToUpdate.id,
           fields: {
-            isCompleted: true,  // Mark the todo as completed
+            isCompleted: true, // Mark the todo as completed
           },
         },
       ],
     };
-  
+
     const options = {
       method: 'PATCH',
       headers: {
@@ -123,26 +141,29 @@ function App() {
       },
       body: JSON.stringify(payload),
     };
-  
+
     try {
       // 3. Send the PATCH request to Airtable
-      const resp = await fetch(url, options);
+      const resp = await fetch(
+        encodeUrl({ sortField, sortDirection, queryString }),
+        options
+      );
       if (!resp.ok) {
         throw new Error('Failed to mark todo as complete');
       }
-  
+
       // 4. Handle successful response from Airtable
       const { records } = await resp.json();
       const updatedTodo = {
         id: records[0].id,
         ...records[0].fields,
       };
-  
+
       // Revert UI update if something goes wrong
       if (!records[0].fields.isCompleted) {
         updatedTodo.isCompleted = false;
       }
-  
+
       // 5. Update the UI state with the updated todo
       const finalTodos = todoList.map((todo) =>
         todo.id === updatedTodo.id ? { ...updatedTodo } : todo
@@ -151,7 +172,7 @@ function App() {
     } catch (error) {
       // 6. If error occurs, revert the UI and display the error
       setErrorMessage(`${error.message}. Reverting todo...`);
-  
+
       // Find the original todo that was updated optimistically and revert the change
       const revertedTodos = todoList.map((todo) =>
         todo.id === id ? { ...todo, isCompleted: false } : todo
@@ -176,19 +197,22 @@ function App() {
         },
       ],
     };
-  
+
     const options = {
-      method: 'PATCH', 
+      method: 'PATCH',
       headers: {
         Authorization: token,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
     };
-  
+
     try {
       setIsSaving(true);
-      const resp = await fetch(url, options);
+      const resp = await fetch(
+        encodeUrl({ sortField, sortDirection, queryString }),
+        options
+      );
       if (!resp.ok) {
         throw new Error(resp.message);
       }
@@ -200,7 +224,7 @@ function App() {
       if (!records[0].fields.isCompleted) {
         updatedTodo.isCompleted = false;
       }
-  
+
       const updatedTodos = todoList.map((todo) => {
         if (todo.id === updatedTodo.id) {
           return { ...updatedTodo };
@@ -209,7 +233,6 @@ function App() {
         }
       });
       setTodoList([...updatedTodos]);
-
     } catch (error) {
       console.log('error: ', error);
       setErrorMessage(`${error.message}. Reverting todo...`);
@@ -219,7 +242,6 @@ function App() {
         } else {
           return todo;
         }
-      
       });
       setTodoList([...revertedTodos]);
     } finally {
@@ -227,17 +249,26 @@ function App() {
     }
   };
 
-
   return (
     <div>
       <h1>My todos</h1>
-      <TodoForm onAddTodo={handleAddTodo} isSaving={isSaving}/>
+      <TodoForm onAddTodo={handleAddTodo} isSaving={isSaving} />
       <TodoList
         todoList={todoList}
         onCompleteTodo={completeTodo}
         onUpdateTodo={updateTodo}
         isLoading={isLoading}
       ></TodoList>
+      <hr />
+      <TodosViewForm
+        sortField={sortField}
+        setSortField={setSortField}
+        sortDirection={sortDirection}
+        setSortDirection={setSortDirection}
+        queryString={queryString}
+        setQueryString={setQueryString}
+      />
+
       {errorMessage && (
         <div>
           <hr />
