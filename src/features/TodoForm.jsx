@@ -11,7 +11,7 @@ export default function TodoForm({ onAddTodo }) {
     //const title = event.target.title.value;
     onAddTodo({
       title: workingTodo,
-      isCompleted: false
+      isCompleted: false,
     });
     setWorkingTodo('');
     //event.target.title.value = '';
