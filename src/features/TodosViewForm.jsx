@@ -23,18 +23,20 @@ function TodosViewForm({
       </div>
 
       <label>Sort by</label>
-      <select>
+      <select onChange={(e) => setSortField(e.target.value)}
+        value={sortField}
+        >
         <option value="title">Title</option>
         <option value="createdTime">Time added</option>
-        onChange={(e) => setSortField(e.target.value)}
-        value{sortField};
+        
       </select>
 
       <label>Direction</label>
-      <select>
+      <select id="sortDirection" onChange={(e) => setSortDirection(e.target.value)}
+      value={sortDirection}
+      >
         <option value="desc">Descending</option>
-        id="sortDirection" onChange={(e) => setSortDirection(e.target.value)}
-        value={sortDirection}
+        
       </select>
     </form>
   );
