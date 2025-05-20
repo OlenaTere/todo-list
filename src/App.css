@@ -6,7 +6,7 @@
 
 body,
 #root {
-  background-image: url('/images/90689.jpeg');
+  background-image: url('src/images/90689.jpeg');
 
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #4e342e;
