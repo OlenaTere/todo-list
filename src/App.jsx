@@ -4,10 +4,10 @@ import TodoForm from './features/TodoForm';
 import { useEffect, useState } from 'react';
 import TodosViewForm from './features/TodosViewForm';
 import { useCallback } from 'react';
+import styles from './App.module.css';
 
 const url = `https://api.airtable.com/v0/${import.meta.env.VITE_BASE_ID}/${import.meta.env.VITE_TABLE_NAME}`;
 const token = `Bearer ${import.meta.env.VITE_PAT}`;
-
 
 // const encodeUrl = ({ sortField, sortDirection, queryString }) => {
 //   let sortQuery = `sort[0][field]=${sortField}&sort[0][direction]=${sortDirection}`;
@@ -27,13 +27,15 @@ function App() {
   const [sortField, setSortField] = useState('createdTime');
   const [sortDirection, setSortDirection] = useState('desc');
   const [queryString, setQueryString] = useState('');
-  const encodeUrl = useCallback(()=>{let sortQuery = `sort[0][field]=${sortField}&sort[0][direction]=${sortDirection}`;
-  let searchQuery = '';
+  const encodeUrl = useCallback(() => {
+    let sortQuery = `sort[0][field]=${sortField}&sort[0][direction]=${sortDirection}`;
+    let searchQuery = '';
 
-  if (queryString) {
-    searchQuery = `&filterByFormula=SEARCH("${queryString}", title)`;
-  }
-  return encodeURI(`${url}?${sortQuery}${searchQuery}`);},[sortField, sortDirection, queryString]);
+    if (queryString) {
+      searchQuery = `&filterByFormula=SEARCH("${queryString}", title)`;
+    }
+    return encodeURI(`${url}?${sortQuery}${searchQuery}`);
+  }, [sortField, sortDirection, queryString]);
 
   useEffect(() => {
     const fetchTodos = async () => {
@@ -45,10 +47,7 @@ function App() {
       };
 
       try {
-        const resp = await fetch(
-          encodeUrl(),
-          options
-        );
+        const resp = await fetch(encodeUrl(), options);
         if (!resp.ok) {
           throw new Error(resp.message);
         }
@@ -95,10 +94,7 @@ function App() {
     };
     try {
       setIsSaving(true);
-      const resp = await fetch(
-        encodeUrl(),
-        options
-      );
+      const resp = await fetch(encodeUrl(), options);
       if (!resp.ok) {
         throw new Error(resp.message);
       }
@@ -153,10 +149,7 @@ function App() {
 
     try {
       // 3. Send the PATCH request to Airtable
-      const resp = await fetch(
-        encodeUrl(),
-        options
-      );
+      const resp = await fetch(encodeUrl(), options);
       if (!resp.ok) {
         throw new Error('Failed to mark todo as complete');
       }
@@ -218,10 +211,7 @@ function App() {
 
     try {
       setIsSaving(true);
-      const resp = await fetch(
-        encodeUrl(),
-        options
-      );
+      const resp = await fetch(encodeUrl(), options);
       if (!resp.ok) {
         throw new Error(resp.message);
       }
@@ -259,7 +249,7 @@ function App() {
   };
 
   return (
-    <div>
+    <div className={styles.appContainer}>
       <h1>My todos</h1>
       <TodoForm onAddTodo={handleAddTodo} isSaving={isSaving} />
       <TodoList
@@ -267,7 +257,7 @@ function App() {
         onCompleteTodo={completeTodo}
         onUpdateTodo={updateTodo}
         isLoading={isLoading}
-      ></TodoList>
+      />
       <hr />
       <TodosViewForm
         sortField={sortField}
@@ -279,7 +269,11 @@ function App() {
       />
 
       {errorMessage && (
-        <div>
+        <div className={styles.errorMessage}>{errorMessage}</div>
+      )}
+
+      {errorMessage && (
+        <div className={styles.errorMessage}>
           <hr />
           <p>{errorMessage}</p>
           <button onClick={() => setErrorMessage('')}>Dismiss</button>
