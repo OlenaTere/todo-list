@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState } from 'react';
+import { useEffect } from 'react';
+import styled from 'styled-components';
 
 function TodosViewForm({
   sortDirection,
@@ -8,7 +9,6 @@ function TodosViewForm({
   setSortField,
   queryString,
   setQueryString,
-  
 }) {
   const preventRefresh = (e) => e.preventDefault();
   const [localQueryString, setLocalQueryString] = useState(queryString);
@@ -21,10 +21,9 @@ function TodosViewForm({
     return () => clearTimeout(debounce); // cleanup to avoid overlapping calls
   }, [localQueryString, setQueryString]);
 
-
   return (
-    <form onSubmit={preventRefresh}>
-      <div>
+    <StyledForm onSubmit={preventRefresh}>
+      <StyledField>
         <label>Search todos</label>
         <input
           type="text"
@@ -34,26 +33,32 @@ function TodosViewForm({
         <button type="button" onClick={() => setLocalQueryString('')}>
           Clear
         </button>
-      </div>
+      </StyledField>
 
       <label>Sort by</label>
-      <select onChange={(e) => setSortField(e.target.value)}
-        value={sortField}
-        >
+      <select onChange={(e) => setSortField(e.target.value)} value={sortField}>
         <option value="title">Title</option>
         <option value="createdTime">Time added</option>
-        
       </select>
 
       <label>Direction</label>
-      <select id="sortDirection" onChange={(e) => setSortDirection(e.target.value)}
-      value={sortDirection}
+      <select
+        id="sortDirection"
+        onChange={(e) => setSortDirection(e.target.value)}
+        value={sortDirection}
       >
         <option value="desc">Descending</option>
-        
       </select>
-    </form>
+    </StyledForm>
   );
 }
 
 export default TodosViewForm;
+
+const StyledForm = styled.form`
+  padding: 1rem 0;
+`;
+
+const StyledField = styled.div`
+  padding: 0.5rem 0;
+`;

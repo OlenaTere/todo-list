@@ -1,0 +1,15 @@
+.appContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.errorMessage {
+  border: 1px solid red;
+  padding: 1rem;
+  background-color: #ffe5e5;
+  color: darkred;
+  margin: 1rem 0;
+}
