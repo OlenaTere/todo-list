@@ -13,3 +13,39 @@
   color: darkred;
   margin: 1rem 0;
 }
+
+.header {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.title {
+  text-align: center;
+  margin: 0;
+}
+
+.nav {
+  position: absolute;
+  top: 0;
+  right: 2rem;
+  display: flex;
+  gap: 1.5rem;
+}
+
+.active {
+  color: #888; /* Subdued gray color */
+  text-decoration: underline;
+}
+
+.inactive {
+  color: #222; /* Primary/dark color */
+  text-decoration: none;
+}
+
+.paginationControls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}

@@ -1,34 +1,27 @@
 import './App.css';
-import TodoList from './features/TodoList/TodoList';
-import TodoForm from './features/TodoForm';
-import { useEffect, useState, useReducer } from 'react';
-import TodosViewForm from './features/TodosViewForm';
-import { useCallback } from 'react';
+import { useEffect, useState, useReducer, useCallback } from 'react';
 import styles from './App.module.css';
 import {
   reducer as todosReducer,
   actions as todoActions,
   initialState as initialTodosState,
 } from './reducers/todos.reducer';
+import TodosPage from './pages/TodosPage';
+import Header from './shared/Header';
+import {
+  useLocation,
+  Routes,
+  Route,
+  useSearchParams,
+  useNavigate,
+} from 'react-router';
+import About from './pages/About';
+import NotFound from './pages/NotFound';
 
 const url = `https://api.airtable.com/v0/${import.meta.env.VITE_BASE_ID}/${import.meta.env.VITE_TABLE_NAME}`;
 const token = `Bearer ${import.meta.env.VITE_PAT}`;
 
-// const encodeUrl = ({ sortField, sortDirection, queryString }) => {
-//   let sortQuery = `sort[0][field]=${sortField}&sort[0][direction]=${sortDirection}`;
-//   let searchQuery = '';
-
-//   if (queryString) {
-//     searchQuery = `&filterByFormula=SEARCH("${queryString}", title)`;
-//   }
-//   return encodeURI(`${url}?${sortQuery}${searchQuery}`);
-// };
-
 function App() {
-  // const [todoList, setTodoList] = useState([]);
-  // const [isLoading, setIsLoading] = useState(false); //we dont need that anymore
-  // const [errorMessage, setErrorMessage] = useState('');
-  // const [isSaving, setIsSaving] = useState(false);
   const [sortField, setSortField] = useState('createdTime');
   const [sortDirection, setSortDirection] = useState('desc');
   const [queryString, setQueryString] = useState('');
@@ -42,6 +35,19 @@ function App() {
     }
     return encodeURI(`${url}?${sortQuery}${searchQuery}`);
   }, [sortField, sortDirection, queryString]);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const itemsPerPage = 15;
+  const currentPage = parseInt(searchParams.get('page') || '1', 10);
+  const filteredTodoList = todoState.todoList;
+  const indexOfFirstTodo = (currentPage - 1) * itemsPerPage;
+  const totalPages = Math.ceil(filteredTodoList.length / itemsPerPage);
+  const navigate = useNavigate();
+  const todosOnCurrentPage = filteredTodoList.slice(
+    indexOfFirstTodo,
+    indexOfFirstTodo + itemsPerPage
+  );
+  console.log('todosOnCurrentPage', todosOnCurrentPage);
 
   useEffect(() => {
     const fetchTodos = async () => {
@@ -60,27 +66,16 @@ function App() {
         }
         const { records } = await resp.json();
 
-        // const todos = records
-        //   .filter((record) => record.fields && record.fields.title) //only keep title that actually have a title in Airtable
-        //   .map((record) => ({
-        //     id: record.id,
-        //     title: record.fields.title.trim(), //clean the title (remove empty spaces)
-        //     isCompleted: record.fields.isCompleted ?? false, //if isCompleted is missing, default it to false
-        //   }));
-
-        //setTodoList(todos); //old version from week 10
         dispatch({
           type: todoActions.loadTodos, // Dispatch action to load todos
           records, // Add the records directly to the action object
         });
       } catch (error) {
-        //setErrorMessage(error.message); //old version from week 10
         dispatch({
           type: todoActions.setLoadError, // Dispatch error if fetching fails
           error: error.message, // Pass the error message
         });
       } finally {
-        //setIsLoading(false); //old version from week 10
         dispatch({ type: todoActions.endRequest }); //that was not mentioned in the instructions
       }
     };
@@ -117,40 +112,21 @@ function App() {
       }
       const { records } = await resp.json();
       const first = records[0];
-      // const savedTodo = {
-      //   id: records[0].id,
-      //   ...records[0].fields,
-      // };
-      // if (!records[0].fields.isCompleted) {
-      //   savedTodo.isCompleted = false;
-      // }
-      // setTodoList([...todoList, savedTodo]);
       dispatch({
         type: todoActions.addTodo,
         records: first,
       });
     } catch (error) {
-      //console.log('error: ', error); //do not need that anymore, week 11
-      //setErrorMessage(error.message);
       dispatch({
         type: todoActions.setLoadError,
         error: error.message,
       });
     } finally {
-      //setIsSaving(false);
       dispatch({ type: todoActions.endRequest });
     }
   };
 
   const completeTodo = async (id) => {
-    // 1. Optimistically update the UI: Mark the todo as completed immediately in the UI
-    // const updatedTodos = todoList.map((todo) => {
-    //   if (todo.id === id) {
-    //     return { ...todo, isCompleted: true };
-    //   }
-    //   return todo;
-    // });
-    // setTodoList(updatedTodos);
     const originalTodo = todoState.todoList.find((t) => t.id === id);
     dispatch({ type: todoActions.completeTodo, id });
 
@@ -185,30 +161,7 @@ function App() {
 
       // 4. Handle successful response from Airtable
       const { records: _records } = await resp.json();
-      // const updatedTodo = {
-      //   id: records[0].id,
-      //   ...records[0].fields,
-      // };
-
-      // Revert UI update if something goes wrong
-      // if (!records[0].fields.isCompleted) {
-      //   updatedTodo.isCompleted = false;
-      // }
-
-      // 5. Update the UI state with the updated todo
-      // const finalTodos = todoList.map((todo) =>
-      //   todo.id === updatedTodo.id ? { ...updatedTodo } : todo
-      // );
-      // setTodoList(finalTodos);
     } catch (error) {
-      // 6. If error occurs, revert the UI and display the error
-      //setErrorMessage(`${error.message}. Reverting todo...`);
-
-      // Find the original todo that was updated optimistically and revert the change
-      // const revertedTodos = todoList.map((todo) =>
-      //   todo.id === id ? { ...todo, isCompleted: false } : todo
-      // );
-      // setTodoList(revertedTodos);
       dispatch({
         type: todoActions.revertTodo,
         originalTodo,
@@ -260,33 +213,7 @@ function App() {
         throw new Error(resp.message);
       }
       const { records: _records } = await resp.json();
-      // const updatedTodo = {
-      //   id: records[0].id,
-      //   ...records[0].fields,
-      // };
-      // if (!records[0].fields.isCompleted) {
-      //   updatedTodo.isCompleted = false;
-      // }
-
-      // const updatedTodos = todoList.map((todo) => {
-      //   if (todo.id === updatedTodo.id) {
-      //     return { ...updatedTodo };
-      //   } else {
-      //     return todo;
-      //   }
-      // });
-      // setTodoList([...updatedTodos]);
     } catch (error) {
-      //console.log('error: ', error);
-      // setErrorMessage(`${error.message}. Reverting todo...`);
-      // const revertedTodos = todoList.map((todo) => {
-      //   if (todo.id === originalTodo.id) {
-      //     return originalTodo;
-      //   } else {
-      //     return todo;
-      //   }
-      // });
-      // setTodoList([...revertedTodos]);
       dispatch({
         type: todoActions.revertTodo,
         originalTodo,
@@ -300,40 +227,93 @@ function App() {
     }
   };
 
+  const location = useLocation();
+  const [title, setTitle] = useState('Todo List');
+
+  useEffect(() => {
+    if (location.pathname === '/') {
+      setTitle('Todo List');
+    } else if (location.pathname === '/about') {
+      setTitle('About');
+    } else {
+      setTitle('Not found');
+    }
+  }, [location]);
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setSearchParams({ page: (currentPage - 1).toString() });
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setSearchParams({ page: (currentPage + 1).toString() });
+    }
+  };
+
+  useEffect(() => {
+    if (totalPages > 0) {
+      if (isNaN(currentPage) || currentPage < 1 || currentPage > totalPages) {
+        navigate('/');
+      }
+    }
+  }, [currentPage, totalPages, navigate]);
+  console.log('todoState.todoList', todoState.todoList);
+
   return (
-    <div className={styles.appContainer}>
-      <h1>My todos</h1>
-      <TodoForm onAddTodo={handleAddTodo} isSaving={todoState.isSaving} />
-      <TodoList
-        todoList={todoState.todoList}
-        onCompleteTodo={completeTodo}
-        onUpdateTodo={updateTodo}
-        isLoading={todoState.isLoading}
-      />
-      <hr />
-      <TodosViewForm
-        sortField={sortField}
-        setSortField={setSortField}
-        sortDirection={sortDirection}
-        setSortDirection={setSortDirection}
-        queryString={queryString}
-        setQueryString={setQueryString}
-      />
+    <>
+      <Header title={title} />
+      <div className={styles.appContainer}>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <TodosPage
+                todoState={todoState}
+                todosOnCurrentPage={
+                  todosOnCurrentPage} /* Pass the paginated data */
+                handleAddTodo={handleAddTodo}
+                completeTodo={completeTodo}
+                updateTodo={updateTodo}
+                sortField={sortField}
+                setSortField={setSortField}
+                sortDirection={sortDirection}
+                setSortDirection={setSortDirection}
+                queryString={queryString}
+                setQueryString={setQueryString}
+              />
+            }
+          ></Route>
+          <Route path="/about" element={<About />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
 
-      {/* {todoState.errorMessage && (
-        <div className={styles.errorMessage}>{todoState.errorMessage}</div>
-      )} */}
-
-      {todoState.errorMessage && (
-        <div className={styles.errorMessage}>
-          <hr />
-          <p>{todoState.errorMessage}</p>
-          <button onClick={() => dispatch({ type: todoActions.clearError })}>
-            Dismiss
+        {todoState.errorMessage && (
+          <div className={styles.errorMessage}>
+            <hr />
+            <p>{todoState.errorMessage}</p>
+            <button onClick={() => dispatch({ type: todoActions.clearError })}>
+              Dismiss
+            </button>
+          </div>
+        )}
+        <div className={styles.paginationControls}>
+          <button onClick={handlePreviousPage} disabled={currentPage === 1}>
+            Previous
+          </button>
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={handleNextPage}
+            disabled={currentPage === totalPages}
+          >
+            Next
           </button>
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
 
